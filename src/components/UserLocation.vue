@@ -7,14 +7,14 @@
           type="text"
           placeholder="Enter your address, and press enter to search"
           v-model="address"
-          v-on:keyup.enter="searchLocation"
+          v-on:keyup.enter="showSearchResult"
           ref="autocomplete"
-          @blur="outfocusHandling"
+          @blur="hideSearchResult"
         />
         <font-awesome-icon
           icon="fa-search"
           class="searchBarIcon"
-          @click="searchLocation"
+          @click="showSearchResult"
         />
         <font-awesome-icon
           icon="fa-location-crosshairs"
@@ -86,10 +86,9 @@
   </b-container>
 </template>
 <script src="https://maps.googleapis.com/maps/api/js?libraries=places&key=AIzaSyB9R-_5fp3z2zBoNF3S0mkhE__-nJ2O3qM"></script>
+
 <script>
 export default {
-  name: "HelloWorld",
-
   data() {
     return {
       address: "",
@@ -102,7 +101,41 @@ export default {
     };
   },
   methods: {
+    initGoogleMapApi() {
+      //initiate the google map places autocomplete on the autocomplete input,
+      let $vm = this;
+      var autocomplete = new google.maps.places.Autocomplete(
+        this.$refs["autocomplete"]
+      );
+      autocomplete.addListener("place_changed", function () {
+        //add listener to the autocomplete input field for the result
+        var place = autocomplete.getPlace();
+
+        if (place.hasOwnProperty("geometry")) {
+          // ensure the returned place result has the 'geometry' field to proceed
+          let temp = [...$vm.markers];
+          var timeZone = $vm.getTimeZone(place); //get the time zone
+          temp.unshift({
+            selected: false,
+            name: place.name,
+            position: {
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng(),
+            },
+            timeZone: timeZone,
+            localTime: $vm.convertTZ(timeZone), //get the local time from the timezone
+          });
+          console.log($vm.checkNewPlace(place));
+          if ($vm.checkNewPlace(place)) {
+            $vm.markers = temp;
+          }
+          $vm.address = "";
+          $vm.showSearch = false; //close the search result after a result is being selected
+        }
+      });
+    },
     locatorButtonPressed() {
+      //get the local position
       navigator.geolocation.getCurrentPosition(
         (position) => {
           this.getStreetAddressFrom(
@@ -117,6 +150,7 @@ export default {
     },
 
     async getStreetAddressFrom(lat, long) {
+      //get the address from the coordinate
       try {
         var { data } = await this.axios.get(
           "https://maps.googleapis.com/maps/api/geocode/json?latlng=" +
@@ -128,8 +162,7 @@ export default {
         if (data.error_message) {
           console.log(data.error_message);
         } else {
-          this.address = data.results[0].formatted_address;
-          this.$refs["autocomplete"].value = data.results[0].formatted_address;
+          this.$refs["autocomplete"].value = data.results[0].formatted_address; //change the value of the autocomplete to the received address
           this.$refs["autocomplete"].focus();
         }
       } catch (error) {
@@ -137,6 +170,7 @@ export default {
       }
     },
     getTimeZone(place) {
+      //get time zone from coordinates
       var tzlookup = require("tz-lookup");
       return tzlookup(
         place.geometry.location.lat(),
@@ -144,22 +178,32 @@ export default {
       );
     },
     convertTZ(tzString) {
+      //convert timezone to local time
       const str = new Date().toLocaleString("en-US", { timeZone: tzString });
       return str;
     },
-    searchLocation() {
+    showSearchResult() {
+      //show the search result
       this.showSearch = true;
       document.getElementsByClassName("pac-container")[0].style.display =
-        "block";
+        "block"; //show the result container
       document.getElementsByClassName("pac-container")[0].style.visibility =
         "visible";
     },
-    uniquePlace() {
-      return [...new Set(this.markers.map((item) => item.name))]; // [ 'A', 'B']
+    checkNewPlace(place) {
+      // compare the last search to current search
+      if (place.name === this.markers?.[0]?.name) {
+        //if the new search is not a new place compare to the previous search record, it will not add to the markers obj array
+        return false;
+      }
+      return true;
     },
     checkDelete() {
+      //check delete item
+      //check how many items are selected to be deleted
       var delMarkers = this.markers.filter((marker) => marker.selected);
       if (delMarkers.length > 0) {
+        //show the deleteBtn and the num of selected delete item, when delete markers is more than 0
         this.showDeleteBtn = true;
         this.deleteNum = delMarkers.length;
       } else {
@@ -167,45 +211,18 @@ export default {
       }
     },
     removeLocation() {
+      //remove the selected item
       this.markers = this.markers.filter((marker) => !marker.selected);
     },
-    outfocusHandling() {
+    hideSearchResult() {
+      //when out focus the search input, it should hide the result, and pending the user to press enter or search to show the search result again
       this.showSearch = false;
       document.getElementsByClassName("pac-container")[0].style.visibility =
         "hidden";
     },
   },
   mounted() {
-    let $vm = this;
-    var autocomplete = new google.maps.places.Autocomplete(
-      this.$refs["autocomplete"]
-    );
-    autocomplete.addListener("place_changed", function () {
-      var place = autocomplete.getPlace();
-      console.log(place);
-
-      if (place.hasOwnProperty("geometry")) {
-        let temp = $vm.markers;
-        console.log(temp);
-
-        var timeZone = $vm.getTimeZone(place);
-
-        temp.unshift({
-          selected: false,
-          name: place.name,
-          position: {
-            lat: place.geometry.location.lat(),
-            lng: place.geometry.location.lng(),
-          },
-          timeZone: timeZone,
-          localTime: $vm.convertTZ(timeZone),
-        });
-        console.log(temp);
-        $vm.markers = [...new Set(temp)];
-        $vm.address = "";
-        $vm.showSearch = false;
-      }
-    });
+    this.initGoogleMapApi();
   },
   computed: {
     rows() {
@@ -215,9 +232,8 @@ export default {
   },
   updated() {
     if (!this.showSearch || this.address == "") {
-      this.showSearch = false;
-      document.getElementsByClassName("pac-container")[0].style.visibility =
-        "hidden";
+      //hide the search result, when showSearch is false, or the address value is empty string
+      this.hideSearchResult();
     }
   },
 };
