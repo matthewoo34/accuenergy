@@ -43,15 +43,8 @@
         </google-map>
       </b-col>
       <b-col lg="12" xl="6">
-        <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-            align-items: center;
-          "
-        >
-          <h4 style="margin: 5px">Search History</h4>
+        <div id="tableTopRow">
+          <h4 id="tableTitle">Search History</h4>
           <b-button
             variant="danger"
             v-if="showDeleteBtn"
@@ -129,7 +122,7 @@ export default {
           if ($vm.checkNewPlace(place)) {
             $vm.markers = temp;
           }
-          $vm.address = "";
+          $vm.address = ""; //clear the input value
           $vm.showSearch = false; //close the search result after a result is being selected
         }
       });
@@ -213,6 +206,8 @@ export default {
     removeLocation() {
       //remove the selected item
       this.markers = this.markers.filter((marker) => !marker.selected);
+      this.showDeleteBtn = false;
+      this.deleteNum = 0;
     },
     hideSearchResult() {
       //when out focus the search input, it should hide the result, and pending the user to press enter or search to show the search result again
@@ -256,21 +251,14 @@ export default {
   padding: 10px;
 }
 
-h3 {
-  margin: 40px 0 0;
+#tableTopRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  align-items: center;
 }
 
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-
-a {
-  color: #42b983;
+#tableTitle {
+  margin: 5px;
 }
 </style>
