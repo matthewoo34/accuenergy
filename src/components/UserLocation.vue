@@ -28,11 +28,11 @@
         <google-map
           :zoom="15"
           map-type-id="terrain"
-          style="width: 100%; aspect-ratio: 1/1"
+          id="googleMap"
           :center="
             markers?.length > 0
               ? markers[0].position
-              : { lat: 51.093048, lng: 6.84212 }
+              : { lat: 43.653226, lng: -79.3831843 }
           "
         >
           <google-map-marker
@@ -260,5 +260,10 @@ export default {
 
 #tableTitle {
   margin: 5px;
+}
+
+#googleMap {
+  width: 100%;
+  aspect-ratio: 1/1;
 }
 </style>
