@@ -42,7 +42,7 @@
           />
         </google-map>
       </b-col>
-      <b-col lg="12" xl="6">
+      <b-col lg="12" xl="6" class="mt-lg-3 mt-xl-0">
         <div id="tableTopRow">
           <h4 id="tableTitle">Search History</h4>
           <b-button
@@ -59,10 +59,14 @@
           :per-page="perPage"
           :current-page="currentPage"
           id="location-table"
+          @row-clicked="myRowClickHandler"
         >
           <template v-slot:cell(selected)="row">
             <b-form-group>
-              <b-form-checkbox v-model="row.item.selected"></b-form-checkbox>
+              <b-form-checkbox
+                v-model="row.item.selected"
+                class="tableCheckbox"
+              ></b-form-checkbox>
             </b-form-group>
           </template>
         </b-table>
@@ -215,6 +219,9 @@ export default {
       document.getElementsByClassName("pac-container")[0].style.visibility =
         "hidden";
     },
+    myRowClickHandler(record, index) {
+      record.selected = !record.selected;
+    },
   },
   mounted() {
     this.initGoogleMapApi();
@@ -265,5 +272,10 @@ export default {
 #googleMap {
   width: 100%;
   aspect-ratio: 1/1;
+}
+
+.tableCheckbox {
+  display: flex;
+  justify-content: center;
 }
 </style>
